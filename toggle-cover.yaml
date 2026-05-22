@@ -19,6 +19,13 @@
 
 
 # Usage:
+
+# esphome:
+#   devices:
+#   - id: door1_device
+#     name: "Garage Door 1"
+#   - id: door2_device
+#     name: "Garage Door 2"
 # packages:
 #   # Door 1
 #   door1: 
@@ -38,6 +45,26 @@
 #           closed_endstop_pin: 18
 #           obstacle_sensor_pin: 22
 #           output_pin: 16
+
+#   # Door 2
+#   door2: 
+#     url: https://github.com/al3xius/esphome-toggle-cover
+#     ref: main  # optional
+#     refresh: 1s  # optional
+#     files:
+#       - path: toggle-cover.yaml
+#         vars:
+#           device_id: door2_device
+#           move_duration: 1min
+#           move_delay: 1000
+#           move_pause: 1000
+#           light_delay: 500
+
+#           open_endstop_pin: 19
+#           closed_endstop_pin: 21
+#           obstacle_sensor_pin: 23
+#           output_pin: 17
+
 
 ##########################################################################
 
