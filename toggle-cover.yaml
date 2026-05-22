@@ -11,9 +11,9 @@
 # - light_delay: The duration for the output to be on when triggering the light. Default is 500ms.
 
 # Pins
-# - sw_open_pin: The GPIO pin connected to the open endstop switch. This should be an active low switch that is closed when the cover is fully open.
-# - sw_closed_pin: The GPIO pin connected to the closed endstop switch. This should
-# - sw_obstacle_pin: The GPIO pin connected to the obstacle sensor. This should be an active low sensor that is triggered when there is an obstacle in the way of the cover. This is optional, and can be enabled/disabled from Home Assistant using the "Obstacle Sensor Enabled" switch.
+# - open_endstop_pin: The GPIO pin connected to the open endstop switch. This should be an active low switch that is closed when the cover is fully open.
+# - closed_endstop_pin: The GPIO pin connected to the closed endstop switch. This should
+# - sw_obstacle_sensor_pin: The GPIO pin connected to the obstacle sensor. This should be an active low sensor that is triggered when there is an obstacle in the way of the cover. This is optional, and can be enabled/disabled from Home Assistant using the "Obstacle Sensor Enabled" switch.
 
 ##########################################################################
 
@@ -31,7 +31,7 @@ binary_sensor:
     name: "Limit Switch Open"
     entity_category: diagnostic
     pin:
-      number: ${sw_open_pin}
+      number: ${open_endstop_pin}
       mode:
         input: true
         pullup: true
@@ -45,11 +45,11 @@ binary_sensor:
   # Closed Endstop
   - platform: gpio
     device_id: ${device_id}
-    id: "${device_id}_sw_closed"
+    id: ${device_id}_sw_closed
     name: "Limit Switch Closed"
     entity_category: diagnostic
     pin:
-      number: ${sw_closed_pin}
+      number: ${closed_endstop_pin}
       mode:
         input: true
         pullup: true
@@ -62,13 +62,13 @@ binary_sensor:
 
   # Obstacle Sensor
   - platform: gpio
-    id: "${device_id}_obstacle"
+    id: ${device_id}_obstacle
     name: "Obstacle"
     device_id: ${device_id}
     device_class: motion
     entity_category: diagnostic
     pin:
-      number: ${obstacle_pin}
+      number: ${obstacle_sensor_pin}
       mode:
         input: true
         pullup: true
@@ -99,7 +99,7 @@ binary_sensor:
 switch:
   # Relay Output
   - platform: gpio
-    id: "${device_id}_output"
+    id: ${device_id}_output
     device_id: ${device_id}
     inverted: True
     pin:
@@ -131,48 +131,48 @@ button:
   # Turn on Light
   - platform: template
     device_id: ${device_id}
-    id: "${device_id}_light"
+    id: ${device_id}_light
     name: "Door 1 Light"
     icon: "mdi:lightbulb"
     on_press:
-      - switch.turn_on: "${device_id}_output"
+      - switch.turn_on: ${device_id}_output
       - delay: ${light_delay}ms
-      - switch.turn_off: "${device_id}_output"
+      - switch.turn_off: ${device_id}_output
 
   # Toggle Movement
   - platform: template
     device_id: ${device_id}
-    id: "${device_id}_toggle"
+    id: ${device_id}_toggle
     name: "Door 1 Toggle"
     icon: "mdi:swap-vertical"
     on_press:
       - if:
           condition:
-            binary_sensor.is_off: "${device_id}_endstop_error"
+            binary_sensor.is_off: ${device_id}_endstop_error
           then:
-            - switch.turn_on: "${device_id}_output"
+            - switch.turn_on: ${device_id}_output
             - delay: ${move_delay}ms
-            - switch.turn_off: "${device_id}_output"
+            - switch.turn_off: ${device_id}_output
           else:
             - logger.log: "Door 1 endstop error active, refusing movement"
 
   # switch direction
   - platform: template
-    id: "${device_id}_toggle_2"
+    id: ${device_id}_toggle_2
     on_press:
-      - button.press: "${device_id}_toggle"
+      - button.press: ${device_id}_toggle
       - delay: ${move_pause + move_delay}ms
-      - button.press: "${device_id}_toggle"
+      - button.press: ${device_id}_toggle
 
   # continue in the same direction
   - platform: template
-    id: "${device_id}_toggle_3"
+    id: ${device_id}_toggle_3
     on_press:
-      - button.press: "${device_id}_toggle"
+      - button.press: ${device_id}_toggle
       - delay: ${move_pause + move_delay}ms
-      - button.press: "${device_id}_toggle"
+      - button.press: ${device_id}_toggle
       - delay: ${move_pause + move_delay}ms
-      - button.press: "${device_id}_toggle"
+      - button.press: ${device_id}_toggle
 
 # ----- Basic Cover Logic -----
 cover:
@@ -186,27 +186,27 @@ cover:
 
     open_action:
       - script.execute:
-          id: "${device_id}_smart_move_script"
+          id: ${device_id}_smart_move_script
           cmd: "open"
     open_duration: 1min
-    open_endstop: "${device_id}_sw_open"
+    open_endstop: ${device_id}_sw_open
 
     close_action:
       - script.execute:
-          id: "${device_id}_smart_move_script"
+          id: ${device_id}_smart_move_script
           cmd: "close"
     close_duration: 1min
-    close_endstop: "${device_id}_sw_closed"
-    close_obstacle_sensor: "${device_id}_obstacle_enabled"
+    close_endstop: ${device_id}_sw_closed
+    close_obstacle_sensor: ${device_id}_obstacle_enabled
 
     stop_action:
       - script.execute:
-          id: "${device_id}_smart_move_script"
+          id: ${device_id}_smart_move_script
           cmd: "stop"
 
 # ----- Handle Advanced Toggle Logic -----
 script:
-  - id: "${device_id}_smart_move_script"
+  - id: ${device_id}_smart_move_script
     parameters:
       cmd: string
     then:
@@ -310,7 +310,7 @@ text_sensor:
 
 globals:
   # Obstacle Enabled Global (used to store the enabled state of the obstacle sensor, which can be controlled from the config switch and is used in the obstacle enabled binary sensor)
-  - id: "${device_id}_obstacle_enabled"
+  - id: ${device_id}_obstacle_enabled
     type: bool
     restore_value: true
     initial_value: "true"
