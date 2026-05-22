@@ -62,7 +62,7 @@ binary_sensor:
 
   # Obstacle Sensor
   - platform: gpio
-    id: ${device_id}_obstacle
+    id: ${device_id}_obstacle_detected
     name: "Obstacle"
     device_id: ${device_id}
     device_class: motion
@@ -78,13 +78,13 @@ binary_sensor:
   # Obstacle Enabled State (combines the obstacle sensor with the enabled state from the config switch)
   - platform: template
     device_id: ${device_id}
-    id: ${device_id}_obstacle_enabled
+    id: ${device_id}_obstacle_active
     device_class: problem
     lambda: |-
       if (!id(${device_id}_obstacle_enabled)) {
         return false;
       }
-      return id(${device_id}_obstacle).state;
+      return id(${device_id}_obstacle_detected).state;
 
   # Endstop Error (both endstops active at the same time, which should be impossible and indicates a wiring or hardware issue)
   - platform: template
@@ -197,7 +197,7 @@ cover:
           cmd: "close"
     close_duration: 1min
     close_endstop: ${device_id}_sw_closed
-    close_obstacle_sensor: ${device_id}_obstacle_enabled
+    close_obstacle_sensor: ${device_id}_obstacle_active
 
     stop_action:
       - script.execute:
