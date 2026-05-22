@@ -29,7 +29,7 @@
 #       - path: toggle-cover.yaml
 #         vars:
 #           device_id: door1_device
-#           move_duration: 1m
+#           move_duration: 1min
 #           move_delay: 1000
 #           move_pause: 1000
 #           light_delay: 500
@@ -86,9 +86,9 @@ binary_sensor:
 
   # Obstacle Sensor
   - platform: gpio
+    device_id: ${device_id}
     id: ${device_id}_obstacle_detected
     name: "Obstacle"
-    device_id: ${device_id}
     device_class: motion
     entity_category: diagnostic
     pin:
@@ -98,6 +98,16 @@ binary_sensor:
         pullup: true
     filters:
       - delayed_on_off: 10ms
+
+  
+  # High State Confidence
+  - platform: template
+    device_id: ${device_id}
+    id: ${device_id}_high_state_confidence
+    name: "High State Confidence"
+    lambda: |-
+      return id(${device_id}_state).state == "open" || id(${device_id}_state).state == "closed" || id(${device_id}_previous_state).state == "open" || id(${device_id}_previous_state).state == "closed";
+
 
   # Obstacle State for closing (combines the obstacle sensor with the enabled state from the config switch)
   - platform: template
@@ -119,7 +129,7 @@ binary_sensor:
       if (!id(${device_id}_obstacle_enabled)) {
         return false;
       }
-      return id(${device_id}_obstacle_detected).state && !id(${device_id}_sw_closed).state;
+      return id(${device_id}_obstacle_detected).state && !id(${device_id}_high_state_confidence).state;
 
   # Endstop Error (both endstops active at the same time, which should be impossible and indicates a wiring or hardware issue)
   - platform: template
@@ -249,6 +259,7 @@ script:
           auto open = id(${device_id}_sw_open).state;
           auto closed = id(${device_id}_sw_closed).state;
           auto state = id(${device_id}_state).state;
+          id(${device_id}_previous_state).publish_state(state);
 
           // Error
           if (open && closed) {
@@ -339,9 +350,14 @@ script:
 text_sensor:
   # State Sensor (open/closed/opening/closing/stopped_opening/stopped_closing/error)
   - platform: template
-    id: ${device_id}_state
     device_id: ${device_id}
+    id: ${device_id}_state
     name: "State"
+
+  - platform: template
+    device_id: ${device_id}
+    id: ${device_id}_previous_state
+    name: "Previous State"
 
 globals:
   # Obstacle Enabled Global (used to store the enabled state of the obstacle sensor, which can be controlled from the config switch and is used in the obstacle enabled binary sensor)
