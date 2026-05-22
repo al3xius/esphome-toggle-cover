@@ -6,14 +6,38 @@
 # The cover state is tracked using a template text sensor, which is updated based on the endstop inputs and the last command. This allows the cover to be used with Home Assistant's cover entity, which provides a lot of functionality for free (like assumed state, open/close/stop commands, etc).
 ##########################################################################
 # Parameters:
-# - move_delay: The duration for the output to be on when triggering a movement. This should be long enough to reliably trigger the movement, but not too long to cause issues with the relay or the cover mechanism. Default is 1000ms.
-# - move_pause: The duration to wait after a movement command before allowing another command. This is to prevent sending multiple commands in quick succession, which could confuse the cover mechanism. Default is 1000ms.
-# - light_delay: The duration for the output to be on when triggering the light. Default is 500ms.
+# - move_delay: in ms The duration for the output to be on when triggering a movement. This should be long enough to reliably trigger the movement, but not too long to cause issues with the relay or the cover mechanism. Default is 1000ms.
+# - move_pause: in ms The duration to wait after a movement command before allowing another command. This is to prevent sending multiple commands in quick succession, which could confuse the cover mechanism. Default is 1000ms.
+# - light_delay: in ms The duration for the output to be on when triggering the light. Default is 500ms.
+
+# - move_duration: Opening/Closing duration
 
 # Pins
 # - open_endstop_pin: The GPIO pin connected to the open endstop switch. This should be an active low switch that is closed when the cover is fully open.
 # - closed_endstop_pin: The GPIO pin connected to the closed endstop switch. This should
 # - sw_obstacle_sensor_pin: The GPIO pin connected to the obstacle sensor. This should be an active low sensor that is triggered when there is an obstacle in the way of the cover. This is optional, and can be enabled/disabled from Home Assistant using the "Obstacle Sensor Enabled" switch.
+
+
+# Usage:
+# packages:
+#   # Door 1
+#   door1: 
+#     url: https://github.com/al3xius/esphome-toggle-cover
+#     ref: main  # optional
+#     refresh: 1s  # optional
+#     files:
+#       - path: toggle-cover.yaml
+#         vars:
+#           device_id: door1_device
+#           move_duration: 1m
+#           move_delay: 1000
+#           move_pause: 1000
+#           light_delay: 500
+
+#           open_endstop_pin: 4
+#           closed_endstop_pin: 18
+#           obstacle_sensor_pin: 22
+#           output_pin: 16
 
 ##########################################################################
 
@@ -75,7 +99,7 @@ binary_sensor:
     filters:
       - delayed_on_off: 10ms
 
-  # Obstacle Enabled State (combines the obstacle sensor with the enabled state from the config switch)
+  # Obstacle State for closing (combines the obstacle sensor with the enabled state from the config switch)
   - platform: template
     device_id: ${device_id}
     id: ${device_id}_obstacle_active
@@ -85,6 +109,17 @@ binary_sensor:
         return false;
       }
       return id(${device_id}_obstacle_detected).state;
+
+  # Obstacle State for Opening (only prevent opening if the obstacle sensor is triggered, and the door is not fully closed). This is needed to prevent accidentally closing if the actual state desyncs from the assumed state.
+  - platform: template
+    device_id: ${device_id}
+    id: ${device_id}_obstacle_active_opening
+    device_class: problem
+    lambda: |-
+      if (!id(${device_id}_obstacle_enabled)) {
+        return false;
+      }
+      return id(${device_id}_obstacle_detected).state && !id(${device_id}_sw_closed).state;
 
   # Endstop Error (both endstops active at the same time, which should be impossible and indicates a wiring or hardware issue)
   - platform: template
@@ -143,7 +178,6 @@ button:
   - platform: template
     device_id: ${device_id}
     id: ${device_id}_toggle
-    name: "Door 1 Toggle"
     icon: "mdi:swap-vertical"
     on_press:
       - if:
@@ -188,14 +222,15 @@ cover:
       - script.execute:
           id: ${device_id}_smart_move_script
           cmd: "open"
-    open_duration: 1min
+    open_duration: ${move_duration}
     open_endstop: ${device_id}_sw_open
+    open_obstacle_sensor: ${device_id}_obstacle_active_opening
 
     close_action:
       - script.execute:
           id: ${device_id}_smart_move_script
           cmd: "close"
-    close_duration: 1min
+    close_duration: ${move_duration}
     close_endstop: ${device_id}_sw_closed
     close_obstacle_sensor: ${device_id}_obstacle_active
 
