@@ -12,7 +12,6 @@ ble_client:
 
 # Tesla BLE Vehicle - automatically creates all entities based on role
 tesla_ble_vehicle:
-  device_id: ${device_id}
   ble_client_id: ble_tesla_id
   id: tesla_ble_vehicle_id
   vin: $tesla_vin
