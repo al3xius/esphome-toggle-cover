@@ -28,6 +28,7 @@ tesla_ble_vehicle:
 # BLE sensors from the standard ble_client platform
 sensor:
   - platform: ble_client
+    device_id: ${device_id}
     type: rssi
     ble_client_id: ble_tesla_id
     name: "BLE Signal"
@@ -37,6 +38,7 @@ sensor:
 
 switch:
   - platform: ble_client
+    device_id: ${device_id}
     ble_client_id: ble_tesla_id
     name: "BLE Connection"
     entity_category: diagnostic
