@@ -92,6 +92,13 @@ binary_sensor:
       then:
         - lambda: |-
             id(${device_id}_state).publish_state("open");
+    on_release:
+      then:
+        - lambda: |-
+            // Infer closing State. eg. if manually closed
+            if (id(${device_id}_state).state == "open") {
+              id(${device_id}_state).publish_state("closing");
+            }
 
   # Closed Endstop
   - platform: gpio
@@ -110,6 +117,13 @@ binary_sensor:
       then:
         - lambda: |-
             id(${device_id}_state).publish_state("closed");
+    on_release:
+      then:
+        - lambda: |-
+            // Infer opening State. eg. if manually opened
+            if (id(${device_id}_state).state == "closed") {
+              id(${device_id}_state).publish_state("opening");
+            }
 
   # Obstacle Sensor
   - platform: gpio
@@ -167,6 +181,22 @@ binary_sensor:
     entity_category: diagnostic
     lambda: |-
       return id(${device_id}_sw_open).state && id(${device_id}_sw_closed).state;
+
+
+  # Open Direction Sensor Helper
+  - platform: template
+    device_id: ${device_id}
+    id: ${device_id}_is_opening
+    lambda: |-
+      return id(${device_id}_state).state == "opening";
+
+  # Closing Direction Sensor Helper
+  - platform: template
+    device_id: ${device_id}
+    id: ${device_id}_is_closing
+    lambda: |-
+      return id(${device_id}_state).state == "closing";
+
 
 switch:
   # Relay Output
@@ -262,6 +292,7 @@ cover:
     open_duration: ${move_duration}
     open_endstop: ${device_id}_sw_open
     open_obstacle_sensor: ${device_id}_obstacle_active_opening
+    open_sensor: ${device_id}_is_opening
 
     close_action:
       - script.execute:
@@ -270,6 +301,7 @@ cover:
     close_duration: ${move_duration}
     close_endstop: ${device_id}_sw_closed
     close_obstacle_sensor: ${device_id}_obstacle_active
+    close_sensor: ${device_id}_is_closing
 
     stop_action:
       - script.execute:
