@@ -131,7 +131,6 @@ binary_sensor:
     id: ${device_id}_obstacle_detected
     name: "Obstacle"
     device_class: motion
-    entity_category: diagnostic
     pin:
       number: ${obstacle_sensor_pin}
       mode:
@@ -146,6 +145,7 @@ binary_sensor:
     device_id: ${device_id}
     id: ${device_id}_high_state_confidence
     name: "High State Confidence"
+    entity_category: diagnostic
     lambda: |-
       return id(${device_id}_state).state == "open" || id(${device_id}_state).state == "closed" || id(${device_id}_previous_state).state == "open" || id(${device_id}_previous_state).state == "closed";
 
@@ -214,7 +214,7 @@ switch:
   - platform: template
     device_id: ${device_id}
     id: ${device_id}_obstacle_enable_switch
-    name: "Obstacle Sensor Enabled"
+    name: "Use Obstacle Sensor"
     optimistic: true
     entity_category: config
     restore_mode: RESTORE_DEFAULT_ON
@@ -234,7 +234,7 @@ button:
   - platform: template
     device_id: ${device_id}
     id: ${device_id}_light
-    name: "Door 1 Light"
+    name: "Light"
     icon: "mdi:lightbulb"
     on_press:
       - switch.turn_on: ${device_id}_output
@@ -412,11 +412,13 @@ text_sensor:
     device_id: ${device_id}
     id: ${device_id}_state
     name: "State"
+    entity_category: diagnostic
 
   - platform: template
     device_id: ${device_id}
     id: ${device_id}_previous_state
     name: "Previous State"
+    entity_category: diagnostic
 
 globals:
   # Obstacle Enabled Global (used to store the enabled state of the obstacle sensor, which can be controlled from the config switch and is used in the obstacle enabled binary sensor)
